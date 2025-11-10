@@ -1,0 +1,8 @@
+Django>=4.2
+yfinance
+numpy
+pandas
+scikit-learn
+tensorflow>=2.11
+deap
+

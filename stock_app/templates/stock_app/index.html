@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Predictor (GA + ANN)</title>
+  <!-- Tailwind CDN for simple styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <div class="max-w-5xl mx-auto p-6">
+    <h1 class="text-2xl font-semibold mb-4">Stock Predictor — GA + ANN (MLP / LSTM)</h1>
+
+    <div class="bg-white shadow rounded p-4 mb-4">
+      {% if error %}
+        <div class="text-red-600 mb-2">Error: {{ error }}</div>
+      {% endif %}
+      <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="col-span-2">
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Predict</button>
+        </div>
+      </form>
+      <p class="text-sm text-gray-500 mt-2">Tip: enter multiple tickers like "AAPL, MSFT" to run predictions for both.</p>
+    </div>
+
+    {% for res in results %}
+      <div class="bg-white shadow rounded p-4 mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-lg font-medium">{{ res.ticker }}</h2>
+          <div class="text-sm text-gray-600">MSE: {{ res.mse|floatformat:4 }} &nbsp; RMSE: {{ res.rmse|floatformat:4 }}</div>
+        </div>
+        <canvas id="chart-{{ forloop.counter }}" width="900" height="350"></canvas>
+        <script>
+          (function(){
+            const labels = {{ res.dates|safe }};
+            const actual = {{ res.actual|safe }};
+            const predicted = {{ res.predicted|safe }};
+
+            const ctx = document.getElementById('chart-{{ forloop.counter }}').getContext('2d');
+            const chart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: labels,
+                datasets: [
+                  { label: 'Actual', data: actual, borderWidth: 2, fill: false, pointRadius: 1 },
+                  { label: 'Predicted', data: predicted, borderWidth: 2, fill: false, pointRadius: 1 }
+                ]
+              },
+              options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                  zoom: {
+                    pan: { enabled: true, mode: 'x' },
+                    zoom: {
+                      wheel: { enabled: true },
+                      pinch: { enabled: true },
+                      mode: 'x',
+                    }
+                  },
+                  legend: { position: 'top' }
+                },
+                scales: {
+                  x: { display: true, title: { display: true, text: 'Date' } },
+                  y: { display: true, title: { display: true, text: 'Price' } }
+                }
+              }
+            });
+          })();
+        </script>
+      </div>
+    {% endfor %}
+
+    {% if not results %}
+      <div class="bg-white shadow rounded p-4">No predictions yet — submit the form above.</div>
+    {% endif %}
+  </div>
+</body>
+</html>
